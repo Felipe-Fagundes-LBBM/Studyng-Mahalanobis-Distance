@@ -1,0 +1,66 @@
+---
+title: "Study"
+output: 
+---
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(MatchIt)
+
+set.seed(123)  
+
+
+n <- 100
+
+
+dados <- data.frame(
+  programa = rbinom(n, size = 1, prob = 0.5),  
+  idade = rnorm(n, mean = 40, sd = 10),  
+  educacao = sample(1:5, n, replace = TRUE),  
+  experiencia = rnorm(n, mean = 10, sd = 5) 
+)
+
+# Estimar o propensity score usando um modelo logístico
+modelo_ps <- glm(programa ~ idade + educacao + experiencia, data = dados, family = binomial)
+
+# Adicionar o propensity score ao conjunto de dados
+dados$propensity_score <- predict(modelo_ps, type = "response")
+
+# Ver primeiros registros com o propensity score
+head(dados)
+
+match_it <- matchit(programa ~ idade + educacao + experiencia, data = dados, method = "nearest", distance = "mahalanobis")
+
+# Ver os resultados do pareamento
+summary(match_it)
+
+# Obter os dados pareados
+dados_pareados <- match.data(match_it)
+
+# Comparar a distribuição das covariáveis antes e depois do pareamento
+# Antes do pareamento
+plot_before <- ggplot(dados, aes(x = idade, fill = as.factor(programa))) +
+  geom_histogram(position = "dodge", bins = 30) +
+  labs(title = "Distribuição de Idade Antes do Pareamento",
+       x = "Idade",
+       y = "Frequência",
+       fill = "Programa") +
+  theme_minimal()
+
+# Depois do pareamento
+plot_after <- ggplot(dados_pareados, aes(x = idade, fill = as.factor(programa))) +
+  geom_histogram(position = "dodge", bins = 30) +
+  labs(title = "Distribuição de Idade Depois do Pareamento",
+       x = "Idade",
+       y = "Frequência",
+       fill = "Programa") +
+  theme_minimal()
+
+# Exibir os gráficos
+print(plot_before)
+print(plot_after)
+
+```
+
